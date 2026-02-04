@@ -1,4 +1,4 @@
-# PocketSmith Skill for OpenClaw
+# PocketSmith Skill
 
 > Manage PocketSmith transactions, categories, and financial data via the API.
 
@@ -13,11 +13,61 @@
 
 ## Installation
 
-### Manual Installation
+### Claude Code
+
+Claude Code can automatically discover and use this skill. Install it as a personal skill (available across all projects) or a project skill (specific to one project).
+
+**Personal skill** (recommended):
 
 ```bash
-# Clone into your skills directory
-cd ~/.claude/skills  # or your preferred skills location
+# Clone into your personal skills directory
+mkdir -p ~/.claude/skills
+cd ~/.claude/skills
+git clone https://github.com/lextoumbourou/pocketsmith-skill.git pocketsmith
+
+# Install dependencies
+cd pocketsmith
+uv sync
+```
+
+**Project skill** (for a specific project):
+
+```bash
+# Clone into your project's skills directory
+mkdir -p .claude/skills
+cd .claude/skills
+git clone https://github.com/lextoumbourou/pocketsmith-skill.git pocketsmith
+
+# Install dependencies
+cd pocketsmith
+uv sync
+```
+
+Once installed, Claude Code will automatically load the skill when relevant, or you can invoke it directly with `/pocketsmith`.
+
+### OpenClaw
+
+Install as a managed skill (available to all agents) or workspace skill (specific to one workspace).
+
+**Managed skill** (recommended):
+
+```bash
+# Clone into your managed skills directory
+mkdir -p ~/.openclaw/skills
+cd ~/.openclaw/skills
+git clone https://github.com/lextoumbourou/pocketsmith-skill.git pocketsmith
+
+# Install dependencies
+cd pocketsmith
+uv sync
+```
+
+**Workspace skill** (for a specific workspace):
+
+```bash
+# Clone into your workspace's skills directory
+mkdir -p ./skills
+cd ./skills
 git clone https://github.com/lextoumbourou/pocketsmith-skill.git pocketsmith
 
 # Install dependencies
@@ -28,7 +78,7 @@ uv sync
 ### Verify Installation
 
 ```bash
-cd ~/.claude/skills/pocketsmith
+cd ~/.claude/skills/pocketsmith  # or respective directory for your setup
 uv run pocketsmith --help
 ```
 
@@ -42,13 +92,7 @@ uv run pocketsmith --help
 
 ### 2. Set Environment Variables
 
-For OpenClaw, add to `~/.openclaw/.env`:
-
-```bash
-POCKETSMITH_DEVELOPER_KEY=your_developer_key
-```
-
-Or add to `~/.openclaw/openclaw.json`:
+**For Claude Code** (`~/.claude/settings.json`):
 
 ```json
 {
@@ -58,9 +102,24 @@ Or add to `~/.openclaw/openclaw.json`:
 }
 ```
 
-See [OpenClaw Environment Configuration](https://docs.openclaw.ai/environment) for more options.
+**For OpenClaw** (`~/.openclaw/openclaw.json`):
 
-For shell usage, add to `~/.bashrc` or `~/.zshrc`:
+```json
+{
+  "skills": {
+    "entries": {
+      "pocketsmith": {
+        "enabled": true,
+        "env": {
+          "POCKETSMITH_DEVELOPER_KEY": "your_developer_key"
+        }
+      }
+    }
+  }
+}
+```
+
+**For shell usage** (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
 export POCKETSMITH_DEVELOPER_KEY="your_developer_key"
@@ -68,15 +127,38 @@ export POCKETSMITH_DEVELOPER_KEY="your_developer_key"
 
 ### 3. Enable Write Operations (Optional)
 
-Write operations (create, update, delete) are disabled by default for safety. To enable, add to your environment:
+Write operations (create, update, delete) are disabled by default for safety. To enable:
 
-For OpenClaw (`~/.openclaw/.env`):
+**For Claude Code** (`~/.claude/settings.json`):
 
-```bash
-POCKETSMITH_ALLOW_WRITES=true
+```json
+{
+  "env": {
+    "POCKETSMITH_DEVELOPER_KEY": "your_developer_key",
+    "POCKETSMITH_ALLOW_WRITES": "true"
+  }
+}
 ```
 
-For shell:
+**For OpenClaw** (`~/.openclaw/openclaw.json`):
+
+```json
+{
+  "skills": {
+    "entries": {
+      "pocketsmith": {
+        "enabled": true,
+        "env": {
+          "POCKETSMITH_DEVELOPER_KEY": "your_developer_key",
+          "POCKETSMITH_ALLOW_WRITES": "true"
+        }
+      }
+    }
+  }
+}
+```
+
+**For shell**:
 
 ```bash
 export POCKETSMITH_ALLOW_WRITES=true
@@ -123,15 +205,17 @@ uv run pocketsmith transactions --help
 uv run pocketsmith categories --help
 ```
 
-### In OpenClaw/Claude
+### In Claude Code / OpenClaw
 
-Just ask naturally:
+Once the skill is installed, Claude will automatically use it when relevant. Just ask naturally:
 
 - "Show me my PocketSmith transactions from last month"
 - "Find all transactions containing 'Netflix'"
 - "Categorize transaction 123456 as Subscriptions"
 - "Create a new category called 'Side Projects' under Entertainment"
 - "List all my spending categories"
+
+You can also invoke the skill directly with `/pocketsmith` to see available commands.
 
 ## API Reference
 
