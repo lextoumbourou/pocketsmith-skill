@@ -87,6 +87,13 @@ pocketsmith categories update <category_id> --colour "#00ff00"
 pocketsmith categories delete <category_id>
 ```
 
+### Labels
+
+```bash
+# List all labels for a user
+pocketsmith labels list <user_id>
+```
+
 ## Transaction Filter Options
 
 When listing transactions, these filters are available:

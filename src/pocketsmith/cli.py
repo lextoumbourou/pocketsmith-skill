@@ -288,6 +288,19 @@ def cmd_categories_delete(args: argparse.Namespace) -> int:
 
 
 # -----------------------------------------------------------------------------
+# Labels commands
+# -----------------------------------------------------------------------------
+
+
+def cmd_labels_list(args: argparse.Namespace) -> int:
+    """List labels for a user."""
+    with PocketSmithAPI() as api:
+        result = api.list_labels(args.user_id)
+        print_json(result)
+    return 0
+
+
+# -----------------------------------------------------------------------------
 # Parser
 # -----------------------------------------------------------------------------
 
@@ -428,6 +441,16 @@ def create_parser() -> argparse.ArgumentParser:
     cat_delete = cat_subparsers.add_parser("delete", help="Delete a category")
     cat_delete.add_argument("id", type=int, help="Category ID")
 
+    # -------------------------------------------------------------------------
+    # Labels commands
+    # -------------------------------------------------------------------------
+    labels_parser = subparsers.add_parser("labels", help="Labels commands")
+    labels_subparsers = labels_parser.add_subparsers(dest="labels_command")
+
+    # List labels
+    labels_list = labels_subparsers.add_parser("list", help="List labels for a user")
+    labels_list.add_argument("user_id", type=int, help="User ID")
+
     return parser
 
 
@@ -486,6 +509,14 @@ def main() -> int:
                 return cmd_categories_delete(args)
             else:
                 parser.parse_args(["categories", "--help"])
+                return 0
+
+        # Labels commands
+        elif args.command == "labels":
+            if args.labels_command == "list" or args.labels_command is None:
+                return cmd_labels_list(args)
+            else:
+                parser.parse_args(["labels", "--help"])
                 return 0
 
         parser.print_help()

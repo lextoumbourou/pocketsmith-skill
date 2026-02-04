@@ -492,3 +492,18 @@ class PocketSmithAPI:
             data["refund_behaviour"] = refund_behaviour
 
         return self._client.post(f"/users/{user_id}/categories", json_data=data)
+
+    # -------------------------------------------------------------------------
+    # Labels endpoints
+    # -------------------------------------------------------------------------
+
+    def list_labels(self, user_id: int) -> list[str]:
+        """List all labels for a user.
+
+        Args:
+            user_id: The user ID.
+
+        Returns:
+            List of label strings.
+        """
+        return self._client.get(f"/users/{user_id}/labels")

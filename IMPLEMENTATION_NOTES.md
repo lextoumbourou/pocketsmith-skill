@@ -45,6 +45,9 @@ CLI tool for accessing PocketSmith financial data via the API. Based on the shar
   - `PUT /categories/{id}` - Update category
   - `DELETE /categories/{id}` - Delete category
 
+- [x] **Labels**
+  - `GET /users/{id}/labels` - List labels
+
 ### To Do
 
 - [ ] **Category Rules**
@@ -92,9 +95,6 @@ CLI tool for accessing PocketSmith financial data via the API. Based on the shar
   - `POST /transactions/{id}/attachments` - Create attachment
   - `PUT /attachments/{id}` - Update attachment
   - `DELETE /attachments/{id}` - Delete attachment
-
-- [ ] **Labels**
-  - `GET /users/{id}/labels` - List labels
 
 ## Architecture
 
