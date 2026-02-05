@@ -1,9 +1,13 @@
 # PocketSmith Skill
 
+<p align="center">
+  <img src="pocketsmith.svg" alt="PocketSmith Logo" width="200">
+</p>
+
 [![Tests](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml/badge.svg)](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/lextoumbourou/pocketsmith-skill/branch/main/graph/badge.svg)](https://codecov.io/gh/lextoumbourou/pocketsmith-skill)
 
-> Manage PocketSmith transactions, categories, and financial data via the API.
+> Manage [PocketSmith](https://www.pocketsmith.com) transactions, categories, and financial data via the API.
 
 **Repository:** https://github.com/lextoumbourou/pocketsmith-skill
 
