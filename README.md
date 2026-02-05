@@ -11,6 +11,8 @@
 
 - **Transactions** - List, view, create, update, and delete transactions
 - **Categories** - Full CRUD for spending categories
+- **Budgets** - View budget lists, summaries, and trend analysis
+- **Labels** - Create and manage transaction labels
 - **User Info** - View authenticated user details
 - **Write Protection** - Safe by default, write operations require explicit opt-in
 
@@ -202,10 +204,20 @@ uv run pocketsmith categories list 123456
 # Create a category
 uv run pocketsmith categories create 123456 --title "Subscriptions" --parent-id 28601039
 
+# List budget for a user
+uv run pocketsmith budget list 123456
+
+# Get budget summary for a period
+uv run pocketsmith budget summary 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-12-31
+
+# Get trend analysis for specific categories
+uv run pocketsmith budget trend 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-06-30 --categories 28600217,28637787 --scenarios 1,2
+
 # Get help
 uv run pocketsmith --help
 uv run pocketsmith transactions --help
 uv run pocketsmith categories --help
+uv run pocketsmith budget --help
 ```
 
 ### In Claude Code / OpenClaw
