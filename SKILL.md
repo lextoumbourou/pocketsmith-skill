@@ -81,6 +81,7 @@ pocketsmith categories create <user_id> --title "Bills" --colour "#ff0000" --is-
 # Update a category (requires POCKETSMITH_ALLOW_WRITES=true)
 pocketsmith categories update <category_id> --title "Renamed Category"
 pocketsmith categories update <category_id> --parent-id 456
+pocketsmith categories update <category_id> --no-parent  # Make top-level
 pocketsmith categories update <category_id> --colour "#00ff00"
 
 # Delete a category (requires POCKETSMITH_ALLOW_WRITES=true)
@@ -92,6 +93,23 @@ pocketsmith categories delete <category_id>
 ```bash
 # List all labels for a user
 pocketsmith labels list <user_id>
+```
+
+### Budget
+
+```bash
+# List budget for a user (per-category budget analysis)
+pocketsmith budget list <user_id>
+pocketsmith budget list <user_id> --roll-up true
+
+# Get budget summary for a user
+pocketsmith budget summary <user_id> --period months --interval 1 --start-date 2024-01-01 --end-date 2024-12-31
+
+# Get trend analysis (requires category and scenario IDs)
+pocketsmith budget trend <user_id> --period months --interval 1 --start-date 2024-01-01 --end-date 2024-12-31 --categories "123,456" --scenarios "1,2"
+
+# Refresh forecast cache (requires POCKETSMITH_ALLOW_WRITES=true)
+pocketsmith budget refresh <user_id>
 ```
 
 ## Transaction Filter Options
@@ -112,6 +130,7 @@ When creating/updating categories:
 - `--title` - Category name
 - `--colour` - CSS hex colour (e.g., `#ff0000`)
 - `--parent-id` - Parent category ID for subcategories
+- `--no-parent` - Make category top-level (update only)
 - `--is-transfer` - Mark as transfer category (true/false)
 - `--is-bill` - Mark as bill category (true/false)
 - `--roll-up` - Roll up to parent category (true/false)

@@ -179,6 +179,52 @@ class TestParser:
         assert args.labels_command == "list"
         assert args.user_id == 123
 
+    def test_parser_budget_list(self):
+        """Test parsing 'budget list' command."""
+        parser = create_parser()
+        args = parser.parse_args(["budget", "list", "123"])
+        assert args.command == "budget"
+        assert args.budget_command == "list"
+        assert args.user_id == 123
+
+    def test_parser_budget_summary(self):
+        """Test parsing 'budget summary' command."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "budget", "summary", "123",
+            "--period", "months",
+            "--interval", "1",
+            "--start-date", "2024-01-01",
+            "--end-date", "2024-12-31",
+        ])
+        assert args.command == "budget"
+        assert args.budget_command == "summary"
+        assert args.user_id == 123
+        assert args.period == "months"
+        assert args.interval == 1
+        assert args.start_date == "2024-01-01"
+        assert args.end_date == "2024-12-31"
+
+    def test_parser_budget_trend(self):
+        """Test parsing 'budget trend' command."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "budget", "trend", "123",
+            "--period", "weeks",
+            "--interval", "2",
+            "--start-date", "2024-01-01",
+            "--end-date", "2024-06-30",
+            "--categories", "1,2,3",
+            "--scenarios", "4,5",
+        ])
+        assert args.command == "budget"
+        assert args.budget_command == "trend"
+        assert args.user_id == 123
+        assert args.period == "weeks"
+        assert args.interval == 2
+        assert args.categories == "1,2,3"
+        assert args.scenarios == "4,5"
+
 
 class TestMainCommands:
     """Tests for main CLI commands."""
@@ -296,6 +342,42 @@ class TestMainCommands:
         output = json.loads(captured.out)
         assert output == ["tag1", "tag2", "tag3"]
 
+    def test_budget_list(self, mock_credentials, httpx_mock, capsys):
+        """Test 'budget list' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/users/123/budget",
+            json=[{"category": {"id": 1, "title": "Food"}, "expense": {}}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "budget", "list", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 1
+
+    def test_budget_summary(self, mock_credentials, httpx_mock, capsys):
+        """Test 'budget summary' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/users/123/budget_summary?period=months&interval=1&start_date=2024-01-01&end_date=2024-12-31",
+            json={"income": {"total_actual_amount": 50000}, "expense": {"total_actual_amount": 30000}},
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "budget", "summary", "123",
+            "--period", "months", "--interval", "1",
+            "--start-date", "2024-01-01", "--end-date", "2024-12-31"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert "income" in output
+
 
 class TestWriteCommands:
     """Tests for write commands with protection."""
@@ -394,6 +476,34 @@ class TestWriteCommands:
         captured = capsys.readouterr()
         error = json.loads(captured.err)
         assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_budget_refresh_blocked(self, mock_credentials, capsys, monkeypatch):
+        """Test 'budget refresh' blocked without write permission."""
+        monkeypatch.delenv("POCKETSMITH_ALLOW_WRITES", raising=False)
+
+        with patch.object(sys, "argv", ["pocketsmith", "budget", "refresh", "123"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        error = json.loads(captured.err)
+        assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_budget_refresh_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'budget refresh' allowed with write permission."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/users/123/forecast_cache",
+            status_code=204,
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "budget", "refresh", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["status"] == "success"
 
 
 class TestErrorHandling:

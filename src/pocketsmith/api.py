@@ -389,7 +389,7 @@ class PocketSmithAPI:
         *,
         title: Optional[str] = None,
         colour: Optional[str] = None,
-        parent_id: Optional[int] = None,
+        parent_id: Optional[int] | type[...] = ...,
         is_transfer: Optional[bool] = None,
         is_bill: Optional[bool] = None,
         roll_up: Optional[bool] = None,
@@ -401,7 +401,7 @@ class PocketSmithAPI:
             category_id: The category ID.
             title: Category title.
             colour: CSS hex colour (e.g., '#ff0000').
-            parent_id: Parent category ID (null for top-level).
+            parent_id: Parent category ID. Use None to make top-level, ... to leave unchanged.
             is_transfer: Whether this is a transfer category.
             is_bill: Whether this is a bill category.
             roll_up: Whether to roll up to parent category.
@@ -415,8 +415,8 @@ class PocketSmithAPI:
             data["title"] = title
         if colour is not None:
             data["colour"] = colour
-        if parent_id is not None:
-            data["parent_id"] = parent_id
+        if parent_id is not ...:
+            data["parent_id"] = parent_id  # Can be int or None (for top-level)
         if is_transfer is not None:
             data["is_transfer"] = is_transfer
         if is_bill is not None:
@@ -507,3 +507,113 @@ class PocketSmithAPI:
             List of label strings.
         """
         return self._client.get(f"/users/{user_id}/labels")
+
+    # -------------------------------------------------------------------------
+    # Budget endpoints
+    # -------------------------------------------------------------------------
+
+    def list_budget(
+        self,
+        user_id: int,
+        *,
+        roll_up: Optional[bool] = None,
+    ) -> list[dict[str, Any]]:
+        """List budget for a user.
+
+        Returns the user's budget consisting of one or more budget analysis
+        packages, one per category.
+
+        Args:
+            user_id: The user ID.
+            roll_up: Whether to roll up parent category budgets into children.
+
+        Returns:
+            List of budget analysis package objects.
+        """
+        params: dict[str, Any] = {}
+        if roll_up is not None:
+            params["roll_up"] = 1 if roll_up else 0
+
+        return self._client.get(f"/users/{user_id}/budget", params=params or None)
+
+    def get_budget_summary(
+        self,
+        user_id: int,
+        *,
+        period: str,
+        interval: int,
+        start_date: str,
+        end_date: str,
+    ) -> list[dict[str, Any]]:
+        """Get budget summary for a user.
+
+        Retrieves comprehensive expense/income analysis across all categories
+        for specified periods.
+
+        Args:
+            user_id: The user ID.
+            period: Analysis interval - 'weeks', 'months', 'years', or 'event'.
+            interval: Period multiplier.
+            start_date: Analysis start date (YYYY-MM-DD).
+            end_date: Analysis end date (YYYY-MM-DD).
+
+        Returns:
+            List of budget analysis package objects.
+        """
+        params: dict[str, Any] = {
+            "period": period,
+            "interval": interval,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+
+        return self._client.get(f"/users/{user_id}/budget_summary", params=params)
+
+    def get_trend_analysis(
+        self,
+        user_id: int,
+        *,
+        period: str,
+        interval: int,
+        start_date: str,
+        end_date: str,
+        categories: str,
+        scenarios: str,
+    ) -> list[dict[str, Any]]:
+        """Get trend analysis for a user.
+
+        Produces income/expense budget analysis across multiple categories
+        and scenarios.
+
+        Args:
+            user_id: The user ID.
+            period: Analysis interval - 'weeks', 'months', 'years', or 'event'.
+            interval: Period multiplier.
+            start_date: Analysis start date (YYYY-MM-DD).
+            end_date: Analysis end date (YYYY-MM-DD).
+            categories: Comma-separated category IDs.
+            scenarios: Comma-separated scenario IDs.
+
+        Returns:
+            List of budget analysis package objects.
+        """
+        params: dict[str, Any] = {
+            "period": period,
+            "interval": interval,
+            "start_date": start_date,
+            "end_date": end_date,
+            "categories": categories,
+            "scenarios": scenarios,
+        }
+
+        return self._client.get(f"/users/{user_id}/trend_analysis", params=params)
+
+    def delete_forecast_cache(self, user_id: int) -> None:
+        """Delete and refresh the forecast cache for a user.
+
+        This recalculates and refreshes the user's cached forecast.
+
+        Args:
+            user_id: The user ID.
+        """
+        self._client.delete(f"/users/{user_id}/forecast_cache")

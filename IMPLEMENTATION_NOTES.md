@@ -48,6 +48,12 @@ CLI tool for accessing PocketSmith financial data via the API. Based on the shar
 - [x] **Labels**
   - `GET /users/{id}/labels` - List labels
 
+- [x] **Budgeting**
+  - `GET /users/{id}/budget` - List budget (per-category analysis)
+  - `GET /users/{id}/budget_summary` - Get budget summary
+  - `GET /users/{id}/trend_analysis` - Get trend analysis
+  - `DELETE /users/{id}/forecast_cache` - Refresh forecast cache
+
 ### To Do
 
 - [ ] **Category Rules**
@@ -56,12 +62,6 @@ CLI tool for accessing PocketSmith financial data via the API. Based on the shar
   - `POST /categories/{id}/category_rules` - Create category rule
   - `PUT /category_rules/{id}` - Update category rule
   - `DELETE /category_rules/{id}` - Delete category rule
-
-- [ ] **Budgeting**
-  - `GET /users/{id}/budget` - Get budget summary
-  - `GET /users/{id}/budget_summary` - Get budget analysis
-  - `GET /categories/{id}/budget_summary` - Get category budget summary
-  - `PUT /users/{id}/budget` - Update forecast
 
 - [ ] **Events**
   - `GET /users/{id}/events` - List events

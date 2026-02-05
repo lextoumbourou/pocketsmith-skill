@@ -263,12 +263,19 @@ def cmd_categories_create(args: argparse.Namespace) -> int:
 @requires_write_permission
 def cmd_categories_update(args: argparse.Namespace) -> int:
     """Update a category."""
+    # Handle parent_id: ... means not provided, None means top-level, int means set parent
+    parent_id_value: int | None | type[...] = ...
+    if args.no_parent:
+        parent_id_value = None  # Make top-level
+    elif args.parent_id is not None:
+        parent_id_value = args.parent_id
+
     with PocketSmithAPI() as api:
         result = api.update_category(
             args.id,
             title=args.title,
             colour=args.colour,
-            parent_id=args.parent_id,
+            parent_id=parent_id_value,
             is_transfer=args.is_transfer,
             is_bill=args.is_bill,
             roll_up=args.roll_up,
@@ -297,6 +304,58 @@ def cmd_labels_list(args: argparse.Namespace) -> int:
     with PocketSmithAPI() as api:
         result = api.list_labels(args.user_id)
         print_json(result)
+    return 0
+
+
+# -----------------------------------------------------------------------------
+# Budget commands
+# -----------------------------------------------------------------------------
+
+
+def cmd_budget_list(args: argparse.Namespace) -> int:
+    """List budget for a user."""
+    with PocketSmithAPI() as api:
+        result = api.list_budget(args.user_id, roll_up=args.roll_up)
+        print_json(result)
+    return 0
+
+
+def cmd_budget_summary(args: argparse.Namespace) -> int:
+    """Get budget summary for a user."""
+    with PocketSmithAPI() as api:
+        result = api.get_budget_summary(
+            args.user_id,
+            period=args.period,
+            interval=args.interval,
+            start_date=args.start_date,
+            end_date=args.end_date,
+        )
+        print_json(result)
+    return 0
+
+
+def cmd_budget_trend(args: argparse.Namespace) -> int:
+    """Get trend analysis for a user."""
+    with PocketSmithAPI() as api:
+        result = api.get_trend_analysis(
+            args.user_id,
+            period=args.period,
+            interval=args.interval,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            categories=args.categories,
+            scenarios=args.scenarios,
+        )
+        print_json(result)
+    return 0
+
+
+@requires_write_permission
+def cmd_budget_refresh(args: argparse.Namespace) -> int:
+    """Refresh forecast cache for a user."""
+    with PocketSmithAPI() as api:
+        api.delete_forecast_cache(args.user_id)
+        print(json.dumps({"status": "success", "message": f"Forecast cache refreshed for user {args.user_id}"}))
     return 0
 
 
@@ -432,6 +491,7 @@ def create_parser() -> argparse.ArgumentParser:
     cat_update.add_argument("--title", help="Category title")
     cat_update.add_argument("--colour", help="CSS hex colour (e.g., '#ff0000')")
     cat_update.add_argument("--parent-id", type=int, help="Parent category ID")
+    cat_update.add_argument("--no-parent", action="store_true", help="Make this a top-level category")
     cat_update.add_argument("--is-transfer", type=lambda x: x.lower() == "true", help="Is transfer category (true/false)")
     cat_update.add_argument("--is-bill", type=lambda x: x.lower() == "true", help="Is bill category (true/false)")
     cat_update.add_argument("--roll-up", type=lambda x: x.lower() == "true", help="Roll up to parent (true/false)")
@@ -450,6 +510,39 @@ def create_parser() -> argparse.ArgumentParser:
     # List labels
     labels_list = labels_subparsers.add_parser("list", help="List labels for a user")
     labels_list.add_argument("user_id", type=int, help="User ID")
+
+    # -------------------------------------------------------------------------
+    # Budget commands
+    # -------------------------------------------------------------------------
+    budget_parser = subparsers.add_parser("budget", help="Budget commands")
+    budget_subparsers = budget_parser.add_subparsers(dest="budget_command")
+
+    # List budget
+    budget_list = budget_subparsers.add_parser("list", help="List budget for a user")
+    budget_list.add_argument("user_id", type=int, help="User ID")
+    budget_list.add_argument("--roll-up", type=lambda x: x.lower() == "true", help="Roll up parent categories (true/false)")
+
+    # Budget summary
+    budget_summary = budget_subparsers.add_parser("summary", help="Get budget summary for a user")
+    budget_summary.add_argument("user_id", type=int, help="User ID")
+    budget_summary.add_argument("--period", required=True, choices=["weeks", "months", "years", "event"], help="Analysis interval")
+    budget_summary.add_argument("--interval", required=True, type=int, help="Period multiplier")
+    budget_summary.add_argument("--start-date", required=True, help="Start date (YYYY-MM-DD)")
+    budget_summary.add_argument("--end-date", required=True, help="End date (YYYY-MM-DD)")
+
+    # Trend analysis
+    budget_trend = budget_subparsers.add_parser("trend", help="Get trend analysis for a user")
+    budget_trend.add_argument("user_id", type=int, help="User ID")
+    budget_trend.add_argument("--period", required=True, choices=["weeks", "months", "years", "event"], help="Analysis interval")
+    budget_trend.add_argument("--interval", required=True, type=int, help="Period multiplier")
+    budget_trend.add_argument("--start-date", required=True, help="Start date (YYYY-MM-DD)")
+    budget_trend.add_argument("--end-date", required=True, help="End date (YYYY-MM-DD)")
+    budget_trend.add_argument("--categories", required=True, help="Comma-separated category IDs")
+    budget_trend.add_argument("--scenarios", required=True, help="Comma-separated scenario IDs")
+
+    # Refresh forecast cache
+    budget_refresh = budget_subparsers.add_parser("refresh", help="Refresh forecast cache for a user")
+    budget_refresh.add_argument("user_id", type=int, help="User ID")
 
     return parser
 
@@ -517,6 +610,20 @@ def main() -> int:
                 return cmd_labels_list(args)
             else:
                 parser.parse_args(["labels", "--help"])
+                return 0
+
+        # Budget commands
+        elif args.command == "budget":
+            if args.budget_command == "list":
+                return cmd_budget_list(args)
+            elif args.budget_command == "summary":
+                return cmd_budget_summary(args)
+            elif args.budget_command == "trend":
+                return cmd_budget_trend(args)
+            elif args.budget_command == "refresh":
+                return cmd_budget_refresh(args)
+            else:
+                parser.parse_args(["budget", "--help"])
                 return 0
 
         parser.print_help()
