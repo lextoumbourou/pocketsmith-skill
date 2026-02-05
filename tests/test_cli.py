@@ -538,3 +538,319 @@ class TestErrorHandling:
         captured = capsys.readouterr()
         error = json.loads(captured.err)
         assert "POCKETSMITH_DEVELOPER_KEY" in error["error"]
+
+
+class TestAdditionalCommands:
+    """Additional tests for CLI commands to improve coverage."""
+
+    def test_no_command_shows_help(self, capsys):
+        """Test running without command shows help."""
+        with patch.object(sys, "argv", ["pocketsmith"]):
+            result = main()
+        assert result == 0
+
+    def test_transactions_list_by_account(self, mock_credentials, httpx_mock, capsys):
+        """Test 'transactions list-by-account' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/accounts/789/transactions?uncategorised=0&needs_review=0",
+            json=[{"id": 1}, {"id": 2}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "transactions", "list-by-account", "789"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 2
+
+    def test_transactions_list_by_category(self, mock_credentials, httpx_mock, capsys):
+        """Test 'transactions list-by-category' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/categories/1,2,3/transactions?uncategorised=0&needs_review=0",
+            json=[{"id": 1}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "transactions", "list-by-category", "1,2,3"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 1
+
+    def test_transactions_list_by_transaction_account(self, mock_credentials, httpx_mock, capsys):
+        """Test 'transactions list-by-transaction-account' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/transaction_accounts/999/transactions?uncategorised=0&needs_review=0",
+            json=[{"id": 1}, {"id": 2}, {"id": 3}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "transactions", "list-by-transaction-account", "999"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 3
+
+    def test_transactions_create_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'transactions create' allowed with write permission."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://api.pocketsmith.com/v2/transaction_accounts/456/transactions",
+            json={"id": 123, "payee": "Test Store", "amount": -50.0},
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "transactions", "create", "456",
+            "--payee", "Test Store", "--amount", "-50", "--date", "2024-01-15"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["id"] == 123
+
+    def test_transactions_delete_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'transactions delete' allowed with write permission."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/transactions/123",
+            status_code=204,
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "transactions", "delete", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["status"] == "success"
+
+    def test_categories_get(self, mock_credentials, httpx_mock, capsys):
+        """Test 'categories get' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/categories/123",
+            json={"id": 123, "title": "Food"},
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "categories", "get", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["title"] == "Food"
+
+    def test_categories_create_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'categories create' allowed with write permission."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://api.pocketsmith.com/v2/users/123/categories",
+            json={"id": 456, "title": "New Category"},
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "categories", "create", "123", "--title", "New Category"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["title"] == "New Category"
+
+    def test_categories_update_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'categories update' allowed with write permission."""
+        httpx_mock.add_response(
+            method="PUT",
+            url="https://api.pocketsmith.com/v2/categories/123",
+            json={"id": 123, "title": "Updated Title"},
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "categories", "update", "123", "--title", "Updated Title"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["title"] == "Updated Title"
+
+    def test_categories_update_with_no_parent(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'categories update' with --no-parent flag."""
+        httpx_mock.add_response(
+            method="PUT",
+            url="https://api.pocketsmith.com/v2/categories/123",
+            json={"id": 123, "parent_id": None},
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "categories", "update", "123", "--no-parent"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["parent_id"] is None
+
+    def test_categories_delete_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'categories delete' allowed with write permission."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/categories/123",
+            status_code=204,
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "categories", "delete", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["status"] == "success"
+
+    def test_budget_trend(self, mock_credentials, httpx_mock, capsys):
+        """Test 'budget trend' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/users/123/trend_analysis?period=weeks&interval=2&start_date=2024-01-01&end_date=2024-06-30&categories=1%2C2&scenarios=3%2C4",
+            json=[{"period": {}}],
+        )
+
+        with patch.object(sys, "argv", [
+            "pocketsmith", "budget", "trend", "123",
+            "--period", "weeks", "--interval", "2",
+            "--start-date", "2024-01-01", "--end-date", "2024-06-30",
+            "--categories", "1,2", "--scenarios", "3,4"
+        ]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 1
+
+    def test_auth_status_invalid_key(self, mock_credentials, httpx_mock, capsys):
+        """Test 'auth status' with invalid key returns error."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/me",
+            status_code=401,
+            json={"error": "Unauthorized"},
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "auth", "status"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["authenticated"] is False
+
+
+class TestParserEdgeCases:
+    """Tests for parser edge cases."""
+
+    def test_parser_transactions_list_with_all_filters(self):
+        """Test parsing 'transactions list-by-user' with all filters."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "transactions", "list-by-user", "456",
+            "--start-date", "2024-01-01",
+            "--end-date", "2024-12-31",
+            "--updated-since", "2024-01-01T00:00:00",
+            "--type", "credit",
+            "--uncategorised",
+            "--needs-review",
+            "--search", "coffee",
+            "--page", "2",
+        ])
+        assert args.start_date == "2024-01-01"
+        assert args.end_date == "2024-12-31"
+        assert args.updated_since == "2024-01-01T00:00:00"
+        assert args.type == "credit"
+        assert args.uncategorised is True
+        assert args.needs_review is True
+        assert args.search == "coffee"
+        assert args.page == 2
+
+    def test_parser_categories_create_all_options(self):
+        """Test parsing 'categories create' with all options."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "categories", "create", "123",
+            "--title", "Test",
+            "--colour", "#ff0000",
+            "--parent-id", "456",
+            "--is-transfer", "true",
+            "--is-bill", "false",
+            "--roll-up", "true",
+            "--refund-behaviour", "debit_only",
+        ])
+        assert args.title == "Test"
+        assert args.colour == "#ff0000"
+        assert args.parent_id == 456
+        assert args.is_transfer is True
+        assert args.is_bill is False
+        assert args.roll_up is True
+        assert args.refund_behaviour == "debit_only"
+
+    def test_parser_categories_update_all_options(self):
+        """Test parsing 'categories update' with all options."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "categories", "update", "123",
+            "--title", "Updated",
+            "--colour", "#00ff00",
+            "--parent-id", "789",
+            "--is-transfer", "false",
+            "--is-bill", "true",
+            "--roll-up", "false",
+            "--refund-behaviour", "credit_only",
+        ])
+        assert args.title == "Updated"
+        assert args.parent_id == 789
+
+    def test_parser_transactions_create_all_options(self):
+        """Test parsing 'transactions create' with all options."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "transactions", "create", "456",
+            "--payee", "Test Store",
+            "--amount", "-50.00",
+            "--date", "2024-01-15",
+            "--is-transfer", "true",
+            "--labels", "tag1,tag2",
+            "--category-id", "789",
+            "--note", "Test note",
+            "--memo", "Test memo",
+            "--cheque-number", "12345",
+            "--needs-review", "true",
+        ])
+        assert args.payee == "Test Store"
+        assert args.amount == -50.00
+        assert args.is_transfer is True
+        assert args.labels == "tag1,tag2"
+        assert args.category_id == 789
+        assert args.note == "Test note"
+        assert args.memo == "Test memo"
+        assert args.cheque_number == "12345"
+        assert args.needs_review is True
+
+    def test_parser_budget_list_with_roll_up(self):
+        """Test parsing 'budget list' with roll-up option."""
+        parser = create_parser()
+        args = parser.parse_args([
+            "budget", "list", "123",
+            "--roll-up", "true",
+        ])
+        assert args.roll_up is True
