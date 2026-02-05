@@ -1,6 +1,7 @@
 # PocketSmith Skill
 
 [![Tests](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml/badge.svg)](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/lextoumbourou/pocketsmith-skill/branch/main/graph/badge.svg)](https://codecov.io/gh/lextoumbourou/pocketsmith-skill)
 
 > Manage PocketSmith transactions, categories, and financial data via the API.
 
