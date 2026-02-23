@@ -89,12 +89,14 @@ CLI tool for accessing PocketSmith financial data via the API. Based on the shar
   - `GET /transaction_accounts/{id}` - Get transaction account
   - `PUT /transaction_accounts/{id}` - Update transaction account
 
-- [ ] **Attachments**
-  - `GET /users/{id}/attachments` - List attachments
+- [x] **Attachments**
   - `GET /attachments/{id}` - Get attachment
-  - `POST /transactions/{id}/attachments` - Create attachment
   - `PUT /attachments/{id}` - Update attachment
   - `DELETE /attachments/{id}` - Delete attachment
+  - `GET /users/{id}/attachments` - List user attachments
+  - `GET /transactions/{id}/attachments` - List transaction attachments
+  - `POST /transactions/{id}/attachments` - Assign attachment to transaction
+  - `DELETE /transactions/{transaction_id}/attachments/{attachment_id}` - Unassign attachment from transaction
 
 ## Architecture
 

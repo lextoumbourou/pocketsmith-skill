@@ -854,3 +854,236 @@ class TestParserEdgeCases:
             "--roll-up", "true",
         ])
         assert args.roll_up is True
+
+    def test_parser_attachments_get(self):
+        """Test parsing 'attachments get' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "get", "123"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "get"
+        assert args.id == 123
+
+    def test_parser_attachments_update(self):
+        """Test parsing 'attachments update' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "update", "123", "--title", "New Title"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "update"
+        assert args.id == 123
+        assert args.title == "New Title"
+
+    def test_parser_attachments_delete(self):
+        """Test parsing 'attachments delete' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "delete", "123"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "delete"
+        assert args.id == 123
+
+    def test_parser_attachments_list_by_user(self):
+        """Test parsing 'attachments list-by-user' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "list-by-user", "456"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "list-by-user"
+        assert args.user_id == 456
+
+    def test_parser_attachments_list_by_transaction(self):
+        """Test parsing 'attachments list-by-transaction' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "list-by-transaction", "789"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "list-by-transaction"
+        assert args.transaction_id == 789
+
+    def test_parser_attachments_assign(self):
+        """Test parsing 'attachments assign' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "assign", "789", "123"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "assign"
+        assert args.transaction_id == 789
+        assert args.attachment_id == 123
+
+    def test_parser_attachments_unassign(self):
+        """Test parsing 'attachments unassign' command."""
+        parser = create_parser()
+        args = parser.parse_args(["attachments", "unassign", "789", "123"])
+        assert args.command == "attachments"
+        assert args.attachments_command == "unassign"
+        assert args.transaction_id == 789
+        assert args.attachment_id == 123
+
+
+class TestAttachmentCommands:
+    """Tests for attachment CLI commands."""
+
+    def test_attachments_get(self, mock_credentials, httpx_mock, capsys):
+        """Test 'attachments get' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            json={"id": 123, "title": "Receipt", "type": "image"},
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "get", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["id"] == 123
+        assert output["title"] == "Receipt"
+
+    def test_attachments_update_blocked(self, mock_credentials, capsys, monkeypatch):
+        """Test 'attachments update' blocked without write permission."""
+        monkeypatch.delenv("POCKETSMITH_ALLOW_WRITES", raising=False)
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "update", "123", "--title", "New"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        error = json.loads(captured.err)
+        assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_attachments_update_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'attachments update' allowed with write permission."""
+        httpx_mock.add_response(
+            method="PUT",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            json={"id": 123, "title": "Updated Title"},
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "update", "123", "--title", "Updated Title"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["title"] == "Updated Title"
+
+    def test_attachments_delete_blocked(self, mock_credentials, capsys, monkeypatch):
+        """Test 'attachments delete' blocked without write permission."""
+        monkeypatch.delenv("POCKETSMITH_ALLOW_WRITES", raising=False)
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "delete", "123"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        error = json.loads(captured.err)
+        assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_attachments_delete_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'attachments delete' allowed with write permission."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            status_code=204,
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "delete", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["status"] == "success"
+
+    def test_attachments_list_by_user(self, mock_credentials, httpx_mock, capsys):
+        """Test 'attachments list-by-user' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/users/456/attachments",
+            json=[{"id": 1}, {"id": 2}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "list-by-user", "456"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 2
+
+    def test_attachments_list_by_transaction(self, mock_credentials, httpx_mock, capsys):
+        """Test 'attachments list-by-transaction' command."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments",
+            json=[{"id": 1, "title": "Receipt"}],
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "list-by-transaction", "789"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert len(output) == 1
+
+    def test_attachments_assign_blocked(self, mock_credentials, capsys, monkeypatch):
+        """Test 'attachments assign' blocked without write permission."""
+        monkeypatch.delenv("POCKETSMITH_ALLOW_WRITES", raising=False)
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "assign", "789", "123"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        error = json.loads(captured.err)
+        assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_attachments_assign_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'attachments assign' allowed with write permission."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments",
+            json={"id": 123, "title": "Receipt"},
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "assign", "789", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["id"] == 123
+
+    def test_attachments_unassign_blocked(self, mock_credentials, capsys, monkeypatch):
+        """Test 'attachments unassign' blocked without write permission."""
+        monkeypatch.delenv("POCKETSMITH_ALLOW_WRITES", raising=False)
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "unassign", "789", "123"]):
+            result = main()
+
+        assert result == 1
+        captured = capsys.readouterr()
+        error = json.loads(captured.err)
+        assert "POCKETSMITH_ALLOW_WRITES" in error["error"]
+
+    def test_attachments_unassign_allowed(self, mock_credentials, allow_writes, httpx_mock, capsys):
+        """Test 'attachments unassign' allowed with write permission."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments/123",
+            status_code=204,
+        )
+
+        with patch.object(sys, "argv", ["pocketsmith", "attachments", "unassign", "789", "123"]):
+            result = main()
+
+        assert result == 0
+        captured = capsys.readouterr()
+        output = json.loads(captured.out)
+        assert output["status"] == "success"
+
+    def test_attachments_no_subcommand_shows_help(self, mock_credentials, capsys):
+        """Test running 'attachments' without subcommand shows help."""
+        with patch.object(sys, "argv", ["pocketsmith", "attachments"]):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+        assert exc_info.value.code == 0
+        captured = capsys.readouterr()
+        assert "attachments" in captured.out

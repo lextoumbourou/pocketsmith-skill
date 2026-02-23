@@ -480,3 +480,100 @@ class TestBudgetEndpoints:
         )
         with PocketSmithAPI() as api:
             api.delete_forecast_cache(123)  # Should not raise
+
+
+class TestAttachmentEndpoints:
+    """Tests for attachment-related API endpoints."""
+
+    def test_get_attachment(self, mock_credentials, httpx_mock):
+        """Test get_attachment returns attachment."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            json={
+                "id": 123,
+                "title": "Receipt",
+                "file_name": "receipt.jpg",
+                "type": "image",
+                "content_type": "image/jpeg",
+            },
+        )
+        with PocketSmithAPI() as api:
+            result = api.get_attachment(123)
+            assert result["id"] == 123
+            assert result["title"] == "Receipt"
+
+    def test_update_attachment(self, mock_credentials, httpx_mock):
+        """Test update_attachment."""
+        httpx_mock.add_response(
+            method="PUT",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            json={"id": 123, "title": "Updated Title"},
+        )
+        with PocketSmithAPI() as api:
+            result = api.update_attachment(123, title="Updated Title")
+            assert result["title"] == "Updated Title"
+
+    def test_update_attachment_no_title(self, mock_credentials, httpx_mock):
+        """Test update_attachment with no params sends empty body."""
+        httpx_mock.add_response(
+            method="PUT",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            json={"id": 123, "title": "Original"},
+        )
+        with PocketSmithAPI() as api:
+            result = api.update_attachment(123)
+            assert result["id"] == 123
+
+    def test_delete_attachment(self, mock_credentials, httpx_mock):
+        """Test delete_attachment."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/attachments/123",
+            status_code=204,
+        )
+        with PocketSmithAPI() as api:
+            api.delete_attachment(123)  # Should not raise
+
+    def test_list_user_attachments(self, mock_credentials, httpx_mock):
+        """Test list_user_attachments."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/users/456/attachments",
+            json=[{"id": 1, "title": "Receipt 1"}, {"id": 2, "title": "Receipt 2"}],
+        )
+        with PocketSmithAPI() as api:
+            result = api.list_user_attachments(456)
+            assert len(result) == 2
+
+    def test_list_transaction_attachments(self, mock_credentials, httpx_mock):
+        """Test list_transaction_attachments."""
+        httpx_mock.add_response(
+            method="GET",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments",
+            json=[{"id": 1, "title": "Invoice"}],
+        )
+        with PocketSmithAPI() as api:
+            result = api.list_transaction_attachments(789)
+            assert len(result) == 1
+
+    def test_assign_transaction_attachment(self, mock_credentials, httpx_mock):
+        """Test assign_transaction_attachment."""
+        httpx_mock.add_response(
+            method="POST",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments",
+            json={"id": 123, "title": "Receipt"},
+        )
+        with PocketSmithAPI() as api:
+            result = api.assign_transaction_attachment(789, 123)
+            assert result["id"] == 123
+
+    def test_unassign_transaction_attachment(self, mock_credentials, httpx_mock):
+        """Test unassign_transaction_attachment."""
+        httpx_mock.add_response(
+            method="DELETE",
+            url="https://api.pocketsmith.com/v2/transactions/789/attachments/123",
+            status_code=204,
+        )
+        with PocketSmithAPI() as api:
+            api.unassign_transaction_attachment(789, 123)  # Should not raise

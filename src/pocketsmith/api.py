@@ -617,3 +617,104 @@ class PocketSmithAPI:
             user_id: The user ID.
         """
         self._client.delete(f"/users/{user_id}/forecast_cache")
+
+    # -------------------------------------------------------------------------
+    # Attachment endpoints
+    # -------------------------------------------------------------------------
+
+    def get_attachment(self, attachment_id: int) -> dict[str, Any]:
+        """Get a single attachment by ID.
+
+        Args:
+            attachment_id: The attachment ID.
+
+        Returns:
+            Attachment object with id, title, file_name, type, content_type,
+            original_url, variants, created_at, updated_at.
+        """
+        return self._client.get(f"/attachments/{attachment_id}")
+
+    def update_attachment(
+        self,
+        attachment_id: int,
+        *,
+        title: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Update an attachment.
+
+        Args:
+            attachment_id: The attachment ID.
+            title: New title for the attachment.
+
+        Returns:
+            Updated attachment object.
+        """
+        data: dict[str, Any] = {}
+        if title is not None:
+            data["title"] = title
+
+        return self._client.put(f"/attachments/{attachment_id}", json_data=data)
+
+    def delete_attachment(self, attachment_id: int) -> None:
+        """Delete an attachment permanently.
+
+        Args:
+            attachment_id: The attachment ID.
+        """
+        self._client.delete(f"/attachments/{attachment_id}")
+
+    def list_user_attachments(self, user_id: int) -> list[dict[str, Any]]:
+        """List all attachments for a user.
+
+        Args:
+            user_id: The user ID.
+
+        Returns:
+            List of attachment objects.
+        """
+        return self._client.get(f"/users/{user_id}/attachments")
+
+    def list_transaction_attachments(self, transaction_id: int) -> list[dict[str, Any]]:
+        """List all attachments for a transaction.
+
+        Args:
+            transaction_id: The transaction ID.
+
+        Returns:
+            List of attachment objects.
+        """
+        return self._client.get(f"/transactions/{transaction_id}/attachments")
+
+    def assign_transaction_attachment(
+        self,
+        transaction_id: int,
+        attachment_id: int,
+    ) -> dict[str, Any]:
+        """Assign an existing attachment to a transaction.
+
+        Args:
+            transaction_id: The transaction ID.
+            attachment_id: The attachment ID to assign.
+
+        Returns:
+            Attachment object.
+        """
+        return self._client.post(
+            f"/transactions/{transaction_id}/attachments",
+            json_data={"attachment_id": attachment_id},
+        )
+
+    def unassign_transaction_attachment(
+        self,
+        transaction_id: int,
+        attachment_id: int,
+    ) -> None:
+        """Unassign an attachment from a transaction.
+
+        This does not delete the attachment, only removes the association.
+
+        Args:
+            transaction_id: The transaction ID.
+            attachment_id: The attachment ID to unassign.
+        """
+        self._client.delete(f"/transactions/{transaction_id}/attachments/{attachment_id}")

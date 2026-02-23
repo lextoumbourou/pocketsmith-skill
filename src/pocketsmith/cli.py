@@ -360,6 +360,74 @@ def cmd_budget_refresh(args: argparse.Namespace) -> int:
 
 
 # -----------------------------------------------------------------------------
+# Attachment commands
+# -----------------------------------------------------------------------------
+
+
+def cmd_attachments_get(args: argparse.Namespace) -> int:
+    """Get a single attachment."""
+    with PocketSmithAPI() as api:
+        result = api.get_attachment(args.id)
+        print_json(result)
+    return 0
+
+
+@requires_write_permission
+def cmd_attachments_update(args: argparse.Namespace) -> int:
+    """Update an attachment."""
+    with PocketSmithAPI() as api:
+        result = api.update_attachment(args.id, title=args.title)
+        print_json(result)
+    return 0
+
+
+@requires_write_permission
+def cmd_attachments_delete(args: argparse.Namespace) -> int:
+    """Delete an attachment."""
+    with PocketSmithAPI() as api:
+        api.delete_attachment(args.id)
+        print(json.dumps({"status": "success", "message": f"Attachment {args.id} deleted"}))
+    return 0
+
+
+def cmd_attachments_list_user(args: argparse.Namespace) -> int:
+    """List attachments for a user."""
+    with PocketSmithAPI() as api:
+        result = api.list_user_attachments(args.user_id)
+        print_json(result)
+    return 0
+
+
+def cmd_attachments_list_transaction(args: argparse.Namespace) -> int:
+    """List attachments for a transaction."""
+    with PocketSmithAPI() as api:
+        result = api.list_transaction_attachments(args.transaction_id)
+        print_json(result)
+    return 0
+
+
+@requires_write_permission
+def cmd_attachments_assign(args: argparse.Namespace) -> int:
+    """Assign an attachment to a transaction."""
+    with PocketSmithAPI() as api:
+        result = api.assign_transaction_attachment(args.transaction_id, args.attachment_id)
+        print_json(result)
+    return 0
+
+
+@requires_write_permission
+def cmd_attachments_unassign(args: argparse.Namespace) -> int:
+    """Unassign an attachment from a transaction."""
+    with PocketSmithAPI() as api:
+        api.unassign_transaction_attachment(args.transaction_id, args.attachment_id)
+        print(json.dumps({
+            "status": "success",
+            "message": f"Attachment {args.attachment_id} unassigned from transaction {args.transaction_id}"
+        }))
+    return 0
+
+
+# -----------------------------------------------------------------------------
 # Parser
 # -----------------------------------------------------------------------------
 
@@ -544,6 +612,43 @@ def create_parser() -> argparse.ArgumentParser:
     budget_refresh = budget_subparsers.add_parser("refresh", help="Refresh forecast cache for a user")
     budget_refresh.add_argument("user_id", type=int, help="User ID")
 
+    # -------------------------------------------------------------------------
+    # Attachment commands
+    # -------------------------------------------------------------------------
+    attach_parser = subparsers.add_parser("attachments", help="Attachment commands")
+    attach_subparsers = attach_parser.add_subparsers(dest="attachments_command")
+
+    # Get single attachment
+    attach_get = attach_subparsers.add_parser("get", help="Get a single attachment")
+    attach_get.add_argument("id", type=int, help="Attachment ID")
+
+    # Update attachment
+    attach_update = attach_subparsers.add_parser("update", help="Update an attachment")
+    attach_update.add_argument("id", type=int, help="Attachment ID")
+    attach_update.add_argument("--title", help="New title for the attachment")
+
+    # Delete attachment
+    attach_delete = attach_subparsers.add_parser("delete", help="Delete an attachment permanently")
+    attach_delete.add_argument("id", type=int, help="Attachment ID")
+
+    # List attachments by user
+    attach_list_user = attach_subparsers.add_parser("list-by-user", help="List attachments for a user")
+    attach_list_user.add_argument("user_id", type=int, help="User ID")
+
+    # List attachments by transaction
+    attach_list_tx = attach_subparsers.add_parser("list-by-transaction", help="List attachments for a transaction")
+    attach_list_tx.add_argument("transaction_id", type=int, help="Transaction ID")
+
+    # Assign attachment to transaction
+    attach_assign = attach_subparsers.add_parser("assign", help="Assign an attachment to a transaction")
+    attach_assign.add_argument("transaction_id", type=int, help="Transaction ID")
+    attach_assign.add_argument("attachment_id", type=int, help="Attachment ID to assign")
+
+    # Unassign attachment from transaction
+    attach_unassign = attach_subparsers.add_parser("unassign", help="Unassign an attachment from a transaction")
+    attach_unassign.add_argument("transaction_id", type=int, help="Transaction ID")
+    attach_unassign.add_argument("attachment_id", type=int, help="Attachment ID to unassign")
+
     return parser
 
 
@@ -624,6 +729,26 @@ def main() -> int:
                 return cmd_budget_refresh(args)
             else:
                 parser.parse_args(["budget", "--help"])
+                return 0
+
+        # Attachment commands
+        elif args.command == "attachments":
+            if args.attachments_command == "get":
+                return cmd_attachments_get(args)
+            elif args.attachments_command == "update":
+                return cmd_attachments_update(args)
+            elif args.attachments_command == "delete":
+                return cmd_attachments_delete(args)
+            elif args.attachments_command == "list-by-user":
+                return cmd_attachments_list_user(args)
+            elif args.attachments_command == "list-by-transaction":
+                return cmd_attachments_list_transaction(args)
+            elif args.attachments_command == "assign":
+                return cmd_attachments_assign(args)
+            elif args.attachments_command == "unassign":
+                return cmd_attachments_unassign(args)
+            else:
+                parser.parse_args(["attachments", "--help"])
                 return 0
 
         parser.print_help()
