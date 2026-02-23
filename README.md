@@ -4,6 +4,7 @@
   <img src="pocketsmith.svg" alt="PocketSmith Logo" width="200">
 </p>
 
+[![PyPI version](https://badge.fury.io/py/pocketsmith-cli.svg)](https://pypi.org/project/pocketsmith-cli/)
 [![Tests](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml/badge.svg)](https://github.com/lextoumbourou/pocketsmith-skill/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/lextoumbourou/pocketsmith-skill/branch/main/graph/badge.svg)](https://codecov.io/gh/lextoumbourou/pocketsmith-skill)
 
@@ -17,10 +18,34 @@
 - **Categories** - Full CRUD for spending categories
 - **Budgets** - View budget lists, summaries, and trend analysis
 - **Labels** - Create and manage transaction labels
+- **Attachments** - Manage receipts and documents attached to transactions
 - **User Info** - View authenticated user details
 - **Write Protection** - Safe by default, write operations require explicit opt-in
 
 ## Installation
+
+### CLI (Recommended)
+
+Install as a standalone command-line tool using [pipx](https://pipx.pypa.io/) (recommended) or [uv](https://docs.astral.sh/uv/):
+
+```bash
+# Using pipx (recommended - isolated environment)
+pipx install pocketsmith-cli
+
+# Or using uv
+uv tool install pocketsmith-cli
+
+# Or using pip
+pip install pocketsmith-cli
+```
+
+After installation, the `pocketsmith` command is available globally:
+
+```bash
+pocketsmith --help
+pocketsmith me
+pocketsmith transactions list-by-user 123456
+```
 
 ### Claude Code
 
@@ -87,6 +112,10 @@ uv sync
 ### Verify Installation
 
 ```bash
+# If installed via pipx/pip
+pocketsmith --help
+
+# If installed as a skill (Claude Code/OpenClaw)
 cd ~/.claude/skills/pocketsmith  # or respective directory for your setup
 uv run pocketsmith --help
 ```
@@ -176,7 +205,7 @@ export POCKETSMITH_ALLOW_WRITES=true
 ### 4. Verify Authentication
 
 ```bash
-uv run pocketsmith auth status
+pocketsmith auth status
 ```
 
 ## Usage
@@ -185,43 +214,50 @@ uv run pocketsmith auth status
 
 ```bash
 # Get current user
-uv run pocketsmith me
+pocketsmith me
 
 # List transactions for a user
-uv run pocketsmith transactions list-by-user 123456
+pocketsmith transactions list-by-user 123456
 
 # Search transactions
-uv run pocketsmith transactions list-by-user 123456 --search "coffee" --start-date 2024-01-01
+pocketsmith transactions list-by-user 123456 --search "coffee" --start-date 2024-01-01
 
 # Get a specific transaction
-uv run pocketsmith transactions get 987654
+pocketsmith transactions get 987654
 
 # Update a transaction (requires POCKETSMITH_ALLOW_WRITES=true)
-uv run pocketsmith transactions update 987654 --category-id 28637787
+pocketsmith transactions update 987654 --category-id 28637787
 
 # Create a transaction
-uv run pocketsmith transactions create 456789 --payee "Coffee Shop" --amount -5.50 --date 2024-01-15
+pocketsmith transactions create 456789 --payee "Coffee Shop" --amount -5.50 --date 2024-01-15
 
 # List categories
-uv run pocketsmith categories list 123456
+pocketsmith categories list 123456
 
 # Create a category
-uv run pocketsmith categories create 123456 --title "Subscriptions" --parent-id 28601039
+pocketsmith categories create 123456 --title "Subscriptions" --parent-id 28601039
 
 # List budget for a user
-uv run pocketsmith budget list 123456
+pocketsmith budget list 123456
 
 # Get budget summary for a period
-uv run pocketsmith budget summary 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-12-31
+pocketsmith budget summary 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-12-31
 
 # Get trend analysis for specific categories
-uv run pocketsmith budget trend 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-06-30 --categories 28600217,28637787 --scenarios 1,2
+pocketsmith budget trend 123456 --period months --interval 1 --start-date 2024-01-01 --end-date 2024-06-30 --categories 28600217,28637787 --scenarios 1,2
+
+# List attachments for a transaction
+pocketsmith attachments list-by-transaction 987654
+
+# Get a specific attachment
+pocketsmith attachments get 123456
 
 # Get help
-uv run pocketsmith --help
-uv run pocketsmith transactions --help
-uv run pocketsmith categories --help
-uv run pocketsmith budget --help
+pocketsmith --help
+pocketsmith transactions --help
+pocketsmith categories --help
+pocketsmith budget --help
+pocketsmith attachments --help
 ```
 
 ### In Claude Code / OpenClaw

@@ -76,3 +76,6 @@ dmypy.json
 
 # uv
 uv.lock
+
+# AI Agents
+.claude
